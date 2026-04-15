@@ -1,17 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { getChats } from '../api/chats';
 import { useAuth } from '../context/AuthContext';
 import { useWebSocket } from '../context/WebSocketContext';
-import UserSearchModal from '../components/UserSearchModal';
+import UserSearchModal from './UserSearchModal';
 import type { ChatResponse, MessageResponse } from '../types';
 
-export default function ChatListPage() {
+export default function ChatSidebar() {
   const [chats, setChats] = useState<ChatResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
   const { user, logout } = useAuth();
   const { subscribe } = useWebSocket();
+  const { chatId: activeChatId } = useParams<{ chatId: string }>();
 
   const loadChats = useCallback(async () => {
     try {
@@ -68,16 +69,16 @@ export default function ChatListPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="h-full flex items-center justify-center">
         <p className="text-gray-500">Loading chats...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+      <header className="bg-white border-b px-4 py-3 flex items-center justify-between shrink-0">
         <h1 className="text-xl font-bold text-gray-900">Chats</h1>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-500">{user?.username}</span>
@@ -91,7 +92,7 @@ export default function ChatListPage() {
       </header>
 
       {/* New chat button */}
-      <div className="p-4">
+      <div className="p-4 shrink-0">
         <button
           onClick={() => setShowSearch(true)}
           className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
@@ -101,7 +102,7 @@ export default function ChatListPage() {
       </div>
 
       {/* Chat list */}
-      <div className="flex-1">
+      <div className="flex-1 overflow-y-auto">
         {chats.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 mb-2">No chats yet</p>
@@ -113,11 +114,16 @@ export default function ChatListPage() {
           <ul>
             {chats.map((chat) => {
               const other = getOtherParticipant(chat);
+              const isActive = chat.id === activeChatId;
               return (
                 <li key={chat.id}>
                   <Link
                     to={`/chats/${chat.id}`}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-colors border-b border-gray-100"
+                    className={`flex items-center gap-3 px-4 py-3 transition-colors border-b border-gray-100 ${
+                      isActive
+                        ? 'bg-indigo-50'
+                        : 'hover:bg-gray-100'
+                    }`}
                   >
                     <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-semibold text-lg shrink-0">
                       {other.username[0].toUpperCase()}

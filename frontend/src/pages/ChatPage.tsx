@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { getMessages, sendMessage } from '../api/messages';
 import { getChats } from '../api/chats';
 import { useAuth } from '../context/AuthContext';
@@ -87,22 +87,16 @@ export default function ChatPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="h-full flex items-center justify-center">
         <p className="text-gray-500">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
-        <Link
-          to="/chats"
-          className="text-gray-500 hover:text-gray-700 text-xl"
-        >
-          &larr;
-        </Link>
+      <header className="bg-white border-b px-4 py-3 flex items-center gap-3 shrink-0">
         <div className="w-9 h-9 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-semibold">
           {otherUser?.username[0].toUpperCase()}
         </div>

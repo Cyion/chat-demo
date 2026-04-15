@@ -4,7 +4,7 @@ import { WebSocketProvider } from './context/WebSocketContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import ChatListPage from './pages/ChatListPage';
+import ChatLayout from './pages/ChatLayout';
 import ChatPage from './pages/ChatPage';
 
 export default function App() {
@@ -19,18 +19,20 @@ export default function App() {
               path="/chats"
               element={
                 <ProtectedRoute>
-                  <ChatListPage />
+                  <ChatLayout />
                 </ProtectedRoute>
               }
-            />
-            <Route
-              path="/chats/:chatId"
-              element={
-                <ProtectedRoute>
-                  <ChatPage />
-                </ProtectedRoute>
-              }
-            />
+            >
+              <Route
+                index
+                element={
+                  <div className="h-full flex items-center justify-center text-gray-400">
+                    Select a chat to start messaging
+                  </div>
+                }
+              />
+              <Route path=":chatId" element={<ChatPage />} />
+            </Route>
             <Route path="*" element={<Navigate to="/chats" replace />} />
           </Routes>
         </WebSocketProvider>
