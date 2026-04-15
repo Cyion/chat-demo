@@ -62,7 +62,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                 String chatIdStr = destination.substring("/topic/chat/".length());
                 try {
                     UUID chatId = UUID.fromString(chatIdStr);
-                    var chat = chatRepository.findById(chatId);
+                    var chat = chatRepository.findByIdWithParticipants(chatId);
                     if (chat.isEmpty() || chat.get().getParticipants().stream()
                             .noneMatch(u -> u.getId().equals(principal.id()))) {
                         throw new AccessDeniedException("Not a participant of this chat");

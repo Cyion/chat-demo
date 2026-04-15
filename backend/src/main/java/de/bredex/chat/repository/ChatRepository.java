@@ -13,6 +13,9 @@ public interface ChatRepository extends JpaRepository<Chat, UUID> {
 
     Optional<Chat> findByParticipantHash(String participantHash);
 
+    @Query("SELECT c FROM Chat c JOIN FETCH c.participants WHERE c.id = :id")
+    Optional<Chat> findByIdWithParticipants(@Param("id") UUID id);
+
     @Query("SELECT DISTINCT c FROM Chat c JOIN FETCH c.participants WHERE c.id IN " +
            "(SELECT c2.id FROM Chat c2 JOIN c2.participants p WHERE p.id = :userId) " +
            "ORDER BY c.createdAt DESC")

@@ -3,10 +3,11 @@ import {
   useContext,
   useEffect,
   useRef,
+  useState,
   useCallback,
   type ReactNode,
 } from 'react';
-import { Client } from '@stomp/stompjs';
+import { Client, type StompSubscription } from '@stomp/stompjs';
 import { useAuth } from './AuthContext';
 import type { MessageResponse } from '../types';
 
@@ -14,6 +15,7 @@ type MessageHandler = (message: MessageResponse) => void;
 
 interface WebSocketContextType {
   subscribe: (chatId: string, handler: MessageHandler) => () => void;
+  connected: boolean;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -22,6 +24,8 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const { token, isAuthenticated } = useAuth();
   const clientRef = useRef<Client | null>(null);
   const handlersRef = useRef<Map<string, Set<MessageHandler>>>(new Map());
+  const subscriptionsRef = useRef<Map<string, StompSubscription>>(new Map());
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || !token) {
@@ -39,14 +43,20 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     });
 
     client.onConnect = () => {
-      // Re-subscribe to all active subscriptions after reconnect
-      for (const chatId of handlersRef.current.keys()) {
-        client.subscribe(`/topic/chat/${chatId}`, (frame) => {
-          const msg: MessageResponse = JSON.parse(frame.body);
-          const handlers = handlersRef.current.get(chatId);
-          handlers?.forEach((h) => h(msg));
-        });
-      }
+      subscriptionsRef.current.clear();
+      setConnected(true);
+    };
+
+    client.onWebSocketClose = () => {
+      setConnected(false);
+    };
+
+    client.onStompError = (frame) => {
+      console.error('STOMP error:', frame.headers['message'], frame.body);
+    };
+
+    client.onWebSocketError = (event) => {
+      console.error('WebSocket error:', event);
     };
 
     client.activate();
@@ -55,6 +65,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     return () => {
       client.deactivate();
       clientRef.current = null;
+      setConnected(false);
     };
   }, [token, isAuthenticated]);
 
@@ -68,14 +79,13 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       // If client is connected, subscribe immediately
       const client = clientRef.current;
       if (client?.connected) {
-        const existingHandlers = handlersRef.current.get(chatId)!;
-        if (existingHandlers.size === 1) {
-          // First handler for this chat, create STOMP subscription
-          client.subscribe(`/topic/chat/${chatId}`, (frame) => {
+        if (!subscriptionsRef.current.has(chatId)) {
+          const sub = client.subscribe(`/topic/chat/${chatId}`, (frame) => {
             const msg: MessageResponse = JSON.parse(frame.body);
             const handlers = handlersRef.current.get(chatId);
             handlers?.forEach((h) => h(msg));
           });
+          subscriptionsRef.current.set(chatId, sub);
         }
       }
 
@@ -85,6 +95,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           handlers.delete(handler);
           if (handlers.size === 0) {
             handlersRef.current.delete(chatId);
+            const sub = subscriptionsRef.current.get(chatId);
+            if (sub) {
+              try { sub.unsubscribe(); } catch { /* connection already closed */ }
+              subscriptionsRef.current.delete(chatId);
+            }
           }
         }
       };
@@ -93,7 +108,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <WebSocketContext.Provider value={{ subscribe }}>
+    <WebSocketContext.Provider value={{ subscribe, connected }}>
       {children}
     </WebSocketContext.Provider>
   );

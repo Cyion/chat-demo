@@ -2,7 +2,6 @@ import {
   createContext,
   useContext,
   useState,
-  useEffect,
   useCallback,
   type ReactNode,
 } from 'react';
@@ -34,28 +33,25 @@ function decodeToken(token: string): AuthUser | null {
   }
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setTokenState] = useState<string | null>(null);
-
-  useEffect(() => {
-    const stored = getToken();
-    if (stored) {
-      const decoded = decodeToken(stored);
-      if (decoded) {
-        setTokenState(stored);
-        setUser(decoded);
-      } else {
-        removeToken();
-      }
+function loadStoredAuth(): { user: AuthUser | null; token: string | null } {
+  const stored = getToken();
+  if (stored) {
+    const decoded = decodeToken(stored);
+    if (decoded) {
+      return { user: decoded, token: stored };
     }
-  }, []);
+    removeToken();
+  }
+  return { user: null, token: null };
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [{ user, token }, setAuth] = useState(loadStoredAuth);
 
   const handleAuth = useCallback(async (authToken: string) => {
     setToken(authToken);
-    setTokenState(authToken);
     const decoded = decodeToken(authToken);
-    setUser(decoded);
+    setAuth({ user: decoded, token: authToken });
   }, []);
 
   const login = useCallback(
@@ -76,8 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     removeToken();
-    setTokenState(null);
-    setUser(null);
+    setAuth({ user: null, token: null });
   }, []);
 
   return (

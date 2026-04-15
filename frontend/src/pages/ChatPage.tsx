@@ -14,7 +14,7 @@ export default function ChatPage() {
   const [chat, setChat] = useState<ChatResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const { subscribe } = useWebSocket();
+  const { subscribe, connected } = useWebSocket();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -41,7 +41,7 @@ export default function ChatPage() {
 
   // Subscribe to WebSocket messages
   useEffect(() => {
-    if (!chatId) return;
+    if (!chatId || !connected) return;
 
     const unsub = subscribe(chatId, (msg: MessageResponse) => {
       setMessages((prev) => {
@@ -51,7 +51,7 @@ export default function ChatPage() {
     });
 
     return unsub;
-  }, [chatId, subscribe]);
+  }, [chatId, subscribe, connected]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -69,7 +69,11 @@ export default function ChatPage() {
 
     setSending(true);
     try {
-      await sendMessage(chatId, input.trim());
+      const sentMsg = await sendMessage(chatId, input.trim());
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === sentMsg.id)) return prev;
+        return [...prev, sentMsg];
+      });
       setInput('');
     } finally {
       setSending(false);
