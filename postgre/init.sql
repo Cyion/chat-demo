@@ -21,3 +21,13 @@ CREATE TABLE chat_participants (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     PRIMARY KEY (chat_id, user_id)
 );
+
+CREATE TABLE messages (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    chat_id    UUID         NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+    sender_id  UUID         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content    TEXT         NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_messages_chat_created ON messages (chat_id, created_at);

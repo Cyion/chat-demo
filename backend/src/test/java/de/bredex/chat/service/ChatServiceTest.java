@@ -6,6 +6,7 @@ import de.bredex.chat.entity.Chat;
 import de.bredex.chat.entity.User;
 import de.bredex.chat.exception.ResourceNotFoundException;
 import de.bredex.chat.repository.ChatRepository;
+import de.bredex.chat.repository.MessageRepository;
 import de.bredex.chat.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +28,9 @@ class ChatServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private MessageRepository messageRepository;
 
     @InjectMocks
     private ChatService chatService;

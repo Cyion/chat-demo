@@ -2,11 +2,13 @@ package de.bredex.chat.service;
 
 import de.bredex.chat.dto.ChatCreationResult;
 import de.bredex.chat.dto.ChatResponse;
+import de.bredex.chat.dto.MessageResponse;
 import de.bredex.chat.dto.UserSummaryResponse;
 import de.bredex.chat.entity.Chat;
 import de.bredex.chat.entity.User;
 import de.bredex.chat.exception.ResourceNotFoundException;
 import de.bredex.chat.repository.ChatRepository;
+import de.bredex.chat.repository.MessageRepository;
 import de.bredex.chat.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,10 +26,13 @@ public class ChatService {
 
     private final ChatRepository chatRepository;
     private final UserRepository userRepository;
+    private final MessageRepository messageRepository;
 
-    public ChatService(ChatRepository chatRepository, UserRepository userRepository) {
+    public ChatService(ChatRepository chatRepository, UserRepository userRepository,
+                       MessageRepository messageRepository) {
         this.chatRepository = chatRepository;
         this.userRepository = userRepository;
+        this.messageRepository = messageRepository;
     }
 
     @Transactional(readOnly = true)
@@ -79,6 +84,11 @@ public class ChatService {
         List<UserSummaryResponse> participants = chat.getParticipants().stream()
                 .map(u -> new UserSummaryResponse(u.getId(), u.getUsername()))
                 .toList();
-        return new ChatResponse(chat.getId(), participants, chat.getCreatedAt());
+        MessageResponse lastMessage = messageRepository.findLatestByChatId(chat.getId())
+                .map(m -> new MessageResponse(
+                        m.getId(), m.getChat().getId(), m.getSender().getId(),
+                        m.getSender().getUsername(), m.getContent(), m.getCreatedAt()))
+                .orElse(null);
+        return new ChatResponse(chat.getId(), participants, chat.getCreatedAt(), lastMessage);
     }
 }

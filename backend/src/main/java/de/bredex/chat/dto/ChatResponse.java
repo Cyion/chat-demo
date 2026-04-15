@@ -7,5 +7,6 @@ import java.util.UUID;
 public record ChatResponse(
         UUID id,
         List<UserSummaryResponse> participants,
-        Instant createdAt
+        Instant createdAt,
+        MessageResponse lastMessage
 ) {}
