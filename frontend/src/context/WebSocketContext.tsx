@@ -9,22 +9,26 @@ import {
 } from 'react';
 import { Client, type StompSubscription } from '@stomp/stompjs';
 import { useAuth } from './AuthContext';
-import type { MessageResponse } from '../types';
+import type { MessageResponse, ChatResponse } from '../types';
 
 type MessageHandler = (message: MessageResponse) => void;
+type NewChatHandler = (chat: ChatResponse) => void;
 
 interface WebSocketContextType {
   subscribe: (chatId: string, handler: MessageHandler) => () => void;
+  subscribeToNewChats: (handler: NewChatHandler) => () => void;
   connected: boolean;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
-  const { token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated, user } = useAuth();
   const clientRef = useRef<Client | null>(null);
   const handlersRef = useRef<Map<string, Set<MessageHandler>>>(new Map());
   const subscriptionsRef = useRef<Map<string, StompSubscription>>(new Map());
+  const newChatHandlersRef = useRef<Set<NewChatHandler>>(new Set());
+  const userSubRef = useRef<StompSubscription | null>(null);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
@@ -44,6 +48,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     client.onConnect = () => {
       subscriptionsRef.current.clear();
+      userSubRef.current = null;
       setConnected(true);
     };
 
@@ -107,8 +112,38 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  // Subscribe to user topic whenever connected — handles initial connect and reconnects
+  useEffect(() => {
+    if (!connected || !user) return;
+
+    const client = clientRef.current;
+    if (!client?.connected) return;
+
+    const sub = client.subscribe(`/topic/user/${user.id}`, (frame) => {
+      const chat: ChatResponse = JSON.parse(frame.body);
+      newChatHandlersRef.current.forEach((h) => h(chat));
+    });
+    userSubRef.current = sub;
+
+    return () => {
+      try { sub.unsubscribe(); } catch { /* connection already closed */ }
+      userSubRef.current = null;
+    };
+  }, [connected, user]);
+
+  const subscribeToNewChats = useCallback(
+    (handler: NewChatHandler) => {
+      newChatHandlersRef.current.add(handler);
+
+      return () => {
+        newChatHandlersRef.current.delete(handler);
+      };
+    },
+    []
+  );
+
   return (
-    <WebSocketContext.Provider value={{ subscribe, connected }}>
+    <WebSocketContext.Provider value={{ subscribe, subscribeToNewChats, connected }}>
       {children}
     </WebSocketContext.Provider>
   );

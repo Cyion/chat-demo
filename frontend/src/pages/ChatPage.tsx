@@ -96,7 +96,7 @@ export default function ChatPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b px-4 py-3 flex items-center gap-3 shrink-0">
+      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 shrink-0">
         <div className="w-9 h-9 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-semibold">
           {otherUser?.username[0].toUpperCase()}
         </div>
@@ -146,7 +146,7 @@ export default function ChatPage() {
       {/* Input */}
       <form
         onSubmit={handleSend}
-        className="bg-white border-t px-4 py-3 flex gap-2 sticky bottom-0"
+        className="bg-white border-t border-gray-200 px-4 py-3 flex gap-2 sticky bottom-0"
       >
         <input
           ref={inputRef}

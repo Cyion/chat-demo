@@ -1,6 +1,8 @@
 package de.bredex.chat.service;
 
+import de.bredex.chat.dto.ChatResponse;
 import de.bredex.chat.dto.MessageResponse;
+import de.bredex.chat.dto.UserSummaryResponse;
 import de.bredex.chat.entity.Chat;
 import de.bredex.chat.entity.Message;
 import de.bredex.chat.entity.User;
@@ -58,12 +60,23 @@ public class MessageService {
         User sender = userRepository.findById(senderId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", senderId.toString()));
 
+        boolean isFirstMessage = messageRepository.countByChatId(chatId) == 0;
+
         Message message = new Message(chat, sender, content);
         message = messageRepository.save(message);
 
         log.info("Message {} sent in chat {} by user {}", message.getId(), chatId, senderId);
         MessageResponse response = toMessageResponse(message);
         messagingTemplate.convertAndSend("/topic/chat/" + chatId, response);
+
+        if (isFirstMessage) {
+            ChatResponse chatResponse = toChatResponse(chat, response);
+            chat.getParticipants().stream()
+                    .filter(u -> !u.getId().equals(senderId))
+                    .forEach(u -> messagingTemplate.convertAndSend(
+                            "/topic/user/" + u.getId(), chatResponse));
+        }
+
         return response;
     }
 
@@ -73,6 +86,13 @@ public class MessageService {
         if (!isParticipant) {
             throw new org.springframework.security.access.AccessDeniedException("You are not a participant of this chat");
         }
+    }
+
+    private ChatResponse toChatResponse(Chat chat, MessageResponse lastMessage) {
+        List<UserSummaryResponse> participants = chat.getParticipants().stream()
+                .map(u -> new UserSummaryResponse(u.getId(), u.getUsername()))
+                .toList();
+        return new ChatResponse(chat.getId(), participants, chat.getCreatedAt(), lastMessage);
     }
 
     MessageResponse toMessageResponse(Message message) {

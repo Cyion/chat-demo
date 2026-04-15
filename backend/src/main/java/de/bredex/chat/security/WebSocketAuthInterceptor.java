@@ -52,13 +52,14 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
         if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
             String destination = accessor.getDestination();
+            UsernamePasswordAuthenticationToken auth =
+                    (UsernamePasswordAuthenticationToken) accessor.getUser();
+            if (auth == null) {
+                throw new AccessDeniedException("Not authenticated");
+            }
+            UserPrincipal principal = (UserPrincipal) auth.getPrincipal();
+
             if (destination != null && destination.startsWith("/topic/chat/")) {
-                UsernamePasswordAuthenticationToken auth =
-                        (UsernamePasswordAuthenticationToken) accessor.getUser();
-                if (auth == null) {
-                    throw new AccessDeniedException("Not authenticated");
-                }
-                UserPrincipal principal = (UserPrincipal) auth.getPrincipal();
                 String chatIdStr = destination.substring("/topic/chat/".length());
                 try {
                     UUID chatId = UUID.fromString(chatIdStr);
@@ -69,6 +70,16 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                     }
                 } catch (IllegalArgumentException e) {
                     throw new AccessDeniedException("Invalid chat ID");
+                }
+            } else if (destination != null && destination.startsWith("/topic/user/")) {
+                String userIdStr = destination.substring("/topic/user/".length());
+                try {
+                    UUID userId = UUID.fromString(userIdStr);
+                    if (!userId.equals(principal.id())) {
+                        throw new AccessDeniedException("Cannot subscribe to another user's topic");
+                    }
+                } catch (IllegalArgumentException e) {
+                    throw new AccessDeniedException("Invalid user ID");
                 }
             }
         }

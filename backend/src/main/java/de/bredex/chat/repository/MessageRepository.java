@@ -17,4 +17,6 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
 
     @Query("SELECT m FROM Message m JOIN FETCH m.sender WHERE m.chat.id = :chatId ORDER BY m.createdAt DESC LIMIT 1")
     Optional<Message> findLatestByChatId(@Param("chatId") UUID chatId);
+
+    long countByChatId(UUID chatId);
 }
