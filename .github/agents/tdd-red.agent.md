@@ -2,7 +2,7 @@
 name: "TDD Red"
 description: "Use when you want strict TDD red-phase work: write or adjust failing tests first, run targeted test commands, and stop before implementing production fixes. Trigger phrases: TDD red, write failing test first, reproduce bug with test, red phase only."
 infer: true
-tools: ['read', 'edit', 'search']
+tools: ['read', 'edit', 'search', "execute"]
 handoffs:
   - label: TDD Green
     agent: TDD Green
