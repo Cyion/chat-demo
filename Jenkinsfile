@@ -17,6 +17,7 @@ pipeline {
         stage('Backend: Test') {
             steps {
                 dir('backend') {
+                    sh 'chmod +x mvnw'
                     sh './mvnw test'
                 }
             }
@@ -31,6 +32,7 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
                     dir('backend') {
+                        sh 'chmod +x mvnw'
                         sh '''
                             ./mvnw sonar:sonar \
                                 -Dsonar.projectKey=chat \
