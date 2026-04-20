@@ -49,7 +49,7 @@ export default function ChatSidebar({ reloadKey }: Props) {
     }
 
     return () => unsubscribes.forEach((u) => u());
-  }, [chats.length, subscribe]);
+  }, [chats, subscribe]);
 
   // Subscribe to new chat notifications
   useEffect(() => {

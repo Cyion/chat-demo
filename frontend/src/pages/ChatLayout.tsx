@@ -20,7 +20,6 @@ export default function ChatLayout() {
   // Debounced search
   useEffect(() => {
     if (query.trim().length < 2) {
-      setResults([]);
       return;
     }
 
@@ -77,7 +76,13 @@ export default function ChatLayout() {
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
-              if (e.target.value.trim().length >= 2) setSearchOpen(true);
+              if (e.target.value.trim().length >= 2) {
+                setSearchOpen(true);
+              } else {
+                setResults([]);
+                setSearchOpen(false);
+                setError('');
+              }
             }}
             onFocus={() => {
               if (results.length > 0) setSearchOpen(true);
